@@ -1,0 +1,44 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/switcher
+bin/
+dist/
+
+# Test & coverage
+*.test
+*.out
+coverage.*
+profile.cov
+
+# Go workspace / vendor
+go.work
+go.work.sum
+vendor/
+
+# Dependency & build caches
+.cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log

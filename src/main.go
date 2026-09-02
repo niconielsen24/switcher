@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"switcher/game"
+	"switcher/api"
+
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	player1 := game.NewPlayer("Alice")
-	player2 := game.NewPlayer("Bob")
-	players := []*game.Player{player1, player2}
-	game := game.NewGame(players)
-	fmt.Printf("New game: %f\n", game)
+	e := echo.New()
+	e.GET("/", api.HandleGetGame)
+
+	e.Logger.Fatal(e.Start(":8080"))
 }
