@@ -5,7 +5,7 @@ import (
 )
 
 func HandleGetGame(c echo.Context) error {
-	return c.JSON(200, map[string]interface{}{
+	return c.JSON(200, map[string]any{
 		"message": "Game retrieved successfully",
 	})
 }
