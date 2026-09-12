@@ -5,7 +5,7 @@ import "math/rand"
 const BoardSize = 6
 
 type Board struct {
-	Tiles [][]Tile
+	Tiles [][]Tile `json:"tiles"`
 }
 
 func NewBoard() *Board {
@@ -47,7 +47,7 @@ func (b *Board) SetTile(x, y int, color GameColor) {
 }
 
 func (b *Board) UpdateTileColor(x, y int, color GameColor) {
-	b.Tiles[y][x].color = color
+	b.Tiles[y][x].Color = color
 }
 
 func (b *Board) SwapTiles(pos1, pos2 Position) {

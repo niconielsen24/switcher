@@ -6,9 +6,9 @@ import (
 )
 
 type Game struct {
-	Id      uuid.UUID
-	Players []*game.Player
-	Board   *game.Board
+	Id      uuid.UUID      `json:"id"`
+	Players []*game.Player `json:"players"`
+	Board   *game.Board    `json:"board"`
 }
 
 func NewGame(players []*game.Player) *Game {
