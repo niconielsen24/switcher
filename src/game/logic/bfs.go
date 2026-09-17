@@ -1,6 +1,8 @@
 package logic
 
-import "switcher/game"
+import (
+	"switcher/game"
+)
 
 var directions = []game.Position{
 	{X: 0, Y: 1},  // Up
@@ -9,19 +11,17 @@ var directions = []game.Position{
 	{X: -1, Y: 0}, // Left
 }
 
-const BoardSize = 6
+type connectedMap map[game.Position]bool
 
 func IsFigure(pos game.Position, shape game.Shape, board game.Board) bool {
-	if pos.X < 0 || pos.X >= BoardSize || pos.Y < 0 || pos.Y >= BoardSize {
+	if pos.X < 0 || pos.X >= game.BoardSize || pos.Y < 0 || pos.Y >= game.BoardSize {
 		return false
 	}
 	rootTile := board.Tiles[pos.Y][pos.X]
 
 	valid_neighbors := bfs(rootTile, board)
 
-	normalized_positions := normalizePositions(valid_neighbors)
-
-	return game.ComparePositions(normalized_positions, shape)
+	return containsShape(pos, valid_neighbors, shape)
 }
 
 func bfs(startTile game.Tile, board game.Board) []game.Position {
@@ -29,14 +29,14 @@ func bfs(startTile game.Tile, board game.Board) []game.Position {
 	queue := NewQueue()
 	queue = queue.Enqueue(startTile)
 
-	visited := make(map[game.Position]bool)
+	visited := make(connectedMap)
 	visited[pos] = true
 
 	for queue.length > 0 {
 		currentTile, updatedQueue := queue.Dequeue()
 		queue = updatedQueue
 
-		for _, neighbor := range getNeighbors(currentTile, board, visited) {
+		for _, neighbor := range getNeighborTiles(currentTile, board, visited) {
 			pos := neighbor.Position
 			if !visited[pos] {
 				visited[pos] = true
@@ -46,14 +46,14 @@ func bfs(startTile game.Tile, board game.Board) []game.Position {
 
 	}
 
-	valid_neighbors := []game.Position{}
+	valid_neighbor_positions := []game.Position{}
 	for pos := range visited {
-		valid_neighbors = append(valid_neighbors, pos)
+		valid_neighbor_positions = append(valid_neighbor_positions, pos)
 	}
-	return valid_neighbors
+	return valid_neighbor_positions
 }
 
-func getNeighbors(tile game.Tile, board game.Board, visited map[game.Position]bool) []game.Tile {
+func getNeighborTiles(tile game.Tile, board game.Board, visited map[game.Position]bool) []game.Tile {
 	neighbors := []game.Tile{}
 	for _, dir := range directions {
 		pos := tile.Position
@@ -75,50 +75,35 @@ func getNeighbors(tile game.Tile, board game.Board, visited map[game.Position]bo
 }
 
 func inBounds(pos game.Position) bool {
-	return pos.X >= 0 && pos.X < BoardSize && pos.Y >= 0 && pos.Y < BoardSize
+	return pos.X >= 0 && pos.X < game.BoardSize && pos.Y >= 0 && pos.Y < game.BoardSize
 }
 
-func normalizePositions(positions []game.Position) []game.Position {
-	if len(positions) == 0 {
-		return nil
+// containsShape reports whether shape occurs, at some translation, inside
+// connected, with pos aligned to one of the shape's own cells. Extra
+// connected tiles beyond the shape's cells are allowed.
+func containsShape(pos game.Position, connected []game.Position, shape game.Shape) bool {
+	shapePositions := game.Shapes[shape]
+
+	connectedSet := make(connectedMap, len(connected))
+	for _, p := range connected {
+		connectedSet[p] = true
 	}
 
-	minX := getMinX(positions)
-	minY := getMinY(positions)
+	for _, anchor := range shapePositions {
+		translation := game.Position{X: pos.X - anchor.X, Y: pos.Y - anchor.Y}
 
-	normalized := make([]game.Position, len(positions))
-	for i, pos := range positions {
-		normalized[i] = game.Position{
-			X: pos.X - minX,
-			Y: pos.Y - minY,
+		matches := true
+		for _, cell := range shapePositions {
+			translated := game.Position{X: cell.X + translation.X, Y: cell.Y + translation.Y}
+			if !connectedSet[translated] {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			return true
 		}
 	}
 
-	return normalized
-}
-
-func getMinY(positions []game.Position) int {
-	if len(positions) == 0 {
-		return 0
-	}
-	minY := positions[0].Y
-	for _, pos := range positions {
-		if pos.Y < minY {
-			minY = pos.Y
-		}
-	}
-	return minY
-}
-
-func getMinX(positions []game.Position) int {
-	if len(positions) == 0 {
-		return 0
-	}
-	minX := positions[0].X
-	for _, pos := range positions {
-		if pos.X < minX {
-			minX = pos.X
-		}
-	}
-	return minX
+	return false
 }

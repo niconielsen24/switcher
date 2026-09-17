@@ -1,7 +1,5 @@
 package game
 
-import "sort"
-
 type Shape = string
 
 type Position struct {
@@ -88,33 +86,4 @@ var CrossPositions = []Position{
 	{X: 1, Y: 1},
 	{X: 2, Y: 1},
 	{X: 1, Y: 2},
-}
-
-func ComparePositions(a []Position, shape Shape) bool {
-	b := Shapes[shape]
-	if len(a) != len(b) {
-		return false
-	}
-
-	aSorted := append([]Position{}, a...)
-	bSorted := append([]Position{}, b...)
-	sortPositions(aSorted)
-	sortPositions(bSorted)
-
-	for i, pos := range aSorted {
-		if pos != bSorted[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
-func sortPositions(positions []Position) {
-	sort.Slice(positions, func(i, j int) bool {
-		if positions[i].Y != positions[j].Y {
-			return positions[i].Y < positions[j].Y
-		}
-		return positions[i].X < positions[j].X
-	})
 }

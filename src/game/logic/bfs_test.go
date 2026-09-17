@@ -7,8 +7,8 @@ import (
 
 func newBlueBoard() *game.Board {
 	board := game.NewBoard()
-	for y := range BoardSize {
-		for x := range BoardSize {
+	for y := range game.BoardSize {
+		for x := range game.BoardSize {
 			board.SetTile(x, y, game.Blue)
 		}
 	}
@@ -56,8 +56,38 @@ func TestIsFigureDetectsRedSquare(t *testing.T) {
 		if IsFigure(game.Position{X: -1, Y: 0}, game.ShapeSquare, *board) {
 			t.Error("expected IsFigure to return false for a negative position, got true")
 		}
-		if IsFigure(game.Position{X: 0, Y: BoardSize}, game.ShapeSquare, *board) {
+		if IsFigure(game.Position{X: 0, Y: game.BoardSize}, game.ShapeSquare, *board) {
 			t.Error("expected IsFigure to return false for a position outside the board, got true")
+		}
+	})
+
+	t.Run("square with extra diagonal neighbor tiles", func(t *testing.T) {
+		board := newBlueBoard()
+		squarePositions := []game.Position{
+			{X: 3, Y: 2},
+			{X: 4, Y: 2},
+			{X: 3, Y: 3},
+			{X: 4, Y: 3},
+		}
+		for _, pos := range squarePositions {
+			board.SetTile(pos.X, pos.Y, game.Red)
+		}
+
+		// These tiles are red too, but only touch the square diagonally,
+		// so they are not part of its 4-directionally connected component
+		// and must not affect detection.
+		extraPositions := []game.Position{
+			{X: 2, Y: 1},
+			{X: 5, Y: 1},
+			{X: 2, Y: 4},
+			{X: 5, Y: 4},
+		}
+		for _, pos := range extraPositions {
+			board.SetTile(pos.X, pos.Y, game.Red)
+		}
+
+		if !IsFigure(game.Position{X: 3, Y: 2}, game.ShapeSquare, *board) {
+			t.Error("expected IsFigure to detect the red square despite extra diagonal red tiles, got false")
 		}
 	})
 }
@@ -78,4 +108,83 @@ func TestIsFigureDetectsShapes(t *testing.T) {
 			}
 		})
 	}
+}
+
+var diagonalDirections = []game.Position{
+	{X: 1, Y: 1},
+	{X: 1, Y: -1},
+	{X: -1, Y: 1},
+	{X: -1, Y: -1},
+}
+
+// paintDiagonalNeighborsRed colors every diagonal neighbor of the shape red,
+// skipping any position that is already part of the shape or that is
+// orthogonally connected to it. These tiles should be invisible to the BFS
+// used by IsFigure, since it only walks up/down/left/right.
+func paintDiagonalNeighborsRed(board *game.Board, shapeSet map[game.Position]bool) {
+	isOrthogonalToShape := func(pos game.Position) bool {
+		for _, dir := range directions {
+			if shapeSet[game.Position{X: pos.X + dir.X, Y: pos.Y + dir.Y}] {
+				return true
+			}
+		}
+		return false
+	}
+
+	for shapePos := range shapeSet {
+		for _, dir := range diagonalDirections {
+			candidate := game.Position{X: shapePos.X + dir.X, Y: shapePos.Y + dir.Y}
+			if !inBounds(candidate) {
+				continue
+			}
+			if shapeSet[candidate] || isOrthogonalToShape(candidate) {
+				continue
+			}
+			board.SetTile(candidate.X, candidate.Y, game.Red)
+		}
+	}
+}
+
+func TestIsFigureIgnoresDiagonalNeighborTiles(t *testing.T) {
+	anchor := game.Position{X: 1, Y: 1}
+
+	for shape, positions := range game.Shapes {
+		t.Run(shape, func(t *testing.T) {
+			board := newBlueBoard()
+
+			shapeSet := make(map[game.Position]bool)
+			for _, pos := range positions {
+				abs := game.Position{X: anchor.X + pos.X, Y: anchor.Y + pos.Y}
+				shapeSet[abs] = true
+				board.SetTile(abs.X, abs.Y, game.Red)
+			}
+
+			paintDiagonalNeighborsRed(board, shapeSet)
+
+			start := game.Position{X: anchor.X + positions[0].X, Y: anchor.Y + positions[0].Y}
+			if !IsFigure(start, shape, *board) {
+				t.Errorf("expected IsFigure to detect the red %s shape despite extra diagonal red tiles, got false", shape)
+			}
+		})
+	}
+}
+
+func TestIsFigureDetectsRedSquarePlusExtraOrthogonalNeighbors(t *testing.T) {
+	t.Run("square at the origin", func(t *testing.T) {
+		board := newBlueBoard()
+		squarePositions := []game.Position{
+			{X: 0, Y: 0},
+			{X: 1, Y: 0},
+			{X: 0, Y: 1},
+			{X: 1, Y: 1},
+			{X: 2, Y: 0}, // extra neighbor
+		}
+		for _, pos := range squarePositions {
+			board.SetTile(pos.X, pos.Y, game.Red)
+		}
+
+		if !IsFigure(game.Position{X: 0, Y: 0}, game.ShapeSquare, *board) {
+			t.Error("expected IsFigure to detect the red square, got false")
+		}
+	})
 }
