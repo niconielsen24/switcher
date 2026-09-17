@@ -25,8 +25,7 @@ func IsFigure(pos game.Position, shape game.Shape, board game.Board) bool {
 }
 
 func bfs(startTile game.Tile, board game.Board) []game.Position {
-	pos_x, pos_y := startTile.GetPosition()
-	pos := game.Position{X: pos_x, Y: pos_y}
+	pos := startTile.Position
 	queue := NewQueue()
 	queue = queue.Enqueue(startTile)
 
@@ -38,8 +37,7 @@ func bfs(startTile game.Tile, board game.Board) []game.Position {
 		queue = updatedQueue
 
 		for _, neighbor := range getNeighbors(currentTile, board, visited) {
-			pos_x, pos_y := neighbor.GetPosition()
-			pos := game.Position{X: pos_x, Y: pos_y}
+			pos := neighbor.Position
 			if !visited[pos] {
 				visited[pos] = true
 				queue = queue.Enqueue(neighbor)
@@ -58,19 +56,18 @@ func bfs(startTile game.Tile, board game.Board) []game.Position {
 func getNeighbors(tile game.Tile, board game.Board, visited map[game.Position]bool) []game.Tile {
 	neighbors := []game.Tile{}
 	for _, dir := range directions {
-		x, y := tile.GetPosition()
-		nX := x + dir.X
-		nY := y + dir.Y
-		neighbor_pos := game.Position{X: nX, Y: nY}
+		pos := tile.Position
+		pos.X += dir.X
+		pos.Y += dir.Y
 
-		if !inBounds(neighbor_pos) {
+		if !inBounds(pos) {
 			continue
 		}
-		if visited[neighbor_pos] {
+		if visited[pos] {
 			continue
 		}
-		if board.Tiles[nY][nX].GetColor() == tile.GetColor() {
-			neighbor := board.Tiles[nY][nX]
+		if board.Tiles[pos.Y][pos.X].Color == tile.Color {
+			neighbor := board.Tiles[pos.Y][pos.X]
 			neighbors = append(neighbors, neighbor)
 		}
 	}

@@ -54,8 +54,8 @@ func (b *Board) SwapTiles(pos1, pos2 Position) {
 	tile1 := b.Tiles[pos1.Y][pos1.X]
 	tile2 := b.Tiles[pos2.Y][pos2.X]
 
-	color1 := tile1.GetColor()
-	color2 := tile2.GetColor()
+	color1 := tile1.Color
+	color2 := tile2.Color
 
 	b.UpdateTileColor(pos1.X, pos1.Y, color2)
 	b.UpdateTileColor(pos2.X, pos2.Y, color1)
