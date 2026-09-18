@@ -14,7 +14,7 @@ var directions = []game.Position{
 type connectedMap map[game.Position]bool
 
 func IsFigure(pos game.Position, shape game.Shape, board game.Board) bool {
-	if pos.X < 0 || pos.X >= game.BoardSize || pos.Y < 0 || pos.Y >= game.BoardSize {
+	if !board.InBounds(pos) {
 		return false
 	}
 	rootTile := board.Tiles[pos.Y][pos.X]
@@ -60,7 +60,7 @@ func getNeighborTiles(tile game.Tile, board game.Board, visited map[game.Positio
 		pos.X += dir.X
 		pos.Y += dir.Y
 
-		if !inBounds(pos) {
+		if !board.InBounds(pos) {
 			continue
 		}
 		if visited[pos] {
@@ -74,28 +74,36 @@ func getNeighborTiles(tile game.Tile, board game.Board, visited map[game.Positio
 	return neighbors
 }
 
-func inBounds(pos game.Position) bool {
-	return pos.X >= 0 && pos.X < game.BoardSize && pos.Y >= 0 && pos.Y < game.BoardSize
-}
-
-// containsShape reports whether shape occurs, at some translation, inside
-// connected, with pos aligned to one of the shape's own cells. Extra
-// connected tiles beyond the shape's cells are allowed.
+// TODO: review shape matching logic, should probably
+// check for exact matches instead of ignoring extra tiles.
+// For example, if the shape is a square, but the connected tiles are a square with an extra tile attached,
+// it should not match. This is because the extra tile would be considered part of the shape,
+// and thus the shape would not be a square anymore.
 func containsShape(pos game.Position, connected []game.Position, shape game.Shape) bool {
-	shapePositions := game.Shapes[shape]
+	shapePositions := game.ShapeMap[shape]
 
 	connectedSet := make(connectedMap, len(connected))
 	for _, p := range connected {
 		connectedSet[p] = true
 	}
 
+	for _, orientation := range rotations(shapePositions) {
+		if matchesAtSomeTranslation(pos, orientation, connectedSet) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func matchesAtSomeTranslation(pos game.Position, shapePositions []game.Position, connected connectedMap) bool {
 	for _, anchor := range shapePositions {
 		translation := game.Position{X: pos.X - anchor.X, Y: pos.Y - anchor.Y}
 
 		matches := true
 		for _, cell := range shapePositions {
 			translated := game.Position{X: cell.X + translation.X, Y: cell.Y + translation.Y}
-			if !connectedSet[translated] {
+			if !connected[translated] {
 				matches = false
 				break
 			}
@@ -104,6 +112,23 @@ func containsShape(pos game.Position, connected []game.Position, shape game.Shap
 			return true
 		}
 	}
-
 	return false
+}
+
+func rotations(positions []game.Position) [][]game.Position {
+	variants := make([][]game.Position, 0, 4)
+	current := positions
+	for range 4 {
+		variants = append(variants, current)
+		current = rotate90(current)
+	}
+	return variants
+}
+
+func rotate90(positions []game.Position) []game.Position {
+	rotated := make([]game.Position, len(positions))
+	for i, p := range positions {
+		rotated[i] = game.Position{X: -p.Y, Y: p.X}
+	}
+	return rotated
 }

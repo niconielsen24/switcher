@@ -95,7 +95,7 @@ func TestIsFigureDetectsRedSquare(t *testing.T) {
 func TestIsFigureDetectsShapes(t *testing.T) {
 	anchor := game.Position{X: 1, Y: 1}
 
-	for shape, positions := range game.Shapes {
+	for shape, positions := range game.ShapeMap {
 		t.Run(shape, func(t *testing.T) {
 			board := newBlueBoard()
 			for _, pos := range positions {
@@ -134,7 +134,7 @@ func paintDiagonalNeighborsRed(board *game.Board, shapeSet map[game.Position]boo
 	for shapePos := range shapeSet {
 		for _, dir := range diagonalDirections {
 			candidate := game.Position{X: shapePos.X + dir.X, Y: shapePos.Y + dir.Y}
-			if !inBounds(candidate) {
+			if !board.InBounds(candidate) {
 				continue
 			}
 			if shapeSet[candidate] || isOrthogonalToShape(candidate) {
@@ -148,7 +148,7 @@ func paintDiagonalNeighborsRed(board *game.Board, shapeSet map[game.Position]boo
 func TestIsFigureIgnoresDiagonalNeighborTiles(t *testing.T) {
 	anchor := game.Position{X: 1, Y: 1}
 
-	for shape, positions := range game.Shapes {
+	for shape, positions := range game.ShapeMap {
 		t.Run(shape, func(t *testing.T) {
 			board := newBlueBoard()
 
@@ -166,6 +166,27 @@ func TestIsFigureIgnoresDiagonalNeighborTiles(t *testing.T) {
 				t.Errorf("expected IsFigure to detect the red %s shape despite extra diagonal red tiles, got false", shape)
 			}
 		})
+	}
+}
+
+func TestIsFigureDetectsRotatedShapes(t *testing.T) {
+	// TPositions is three tiles in a row with one hanging below the middle.
+	// Rotated 90 degrees clockwise it becomes three tiles in a column with
+	// one poking out to the left of the middle.
+	rotatedTPositions := []game.Position{
+		{X: 2, Y: 2},
+		{X: 2, Y: 3},
+		{X: 2, Y: 4},
+		{X: 1, Y: 3},
+	}
+
+	board := newBlueBoard()
+	for _, pos := range rotatedTPositions {
+		board.SetTile(pos.X, pos.Y, game.Red)
+	}
+
+	if !IsFigure(game.Position{X: 2, Y: 2}, game.ShapeT, *board) {
+		t.Error("expected IsFigure to detect the T shape rotated 90 degrees, got false")
 	}
 }
 

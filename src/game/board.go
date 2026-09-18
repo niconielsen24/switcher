@@ -1,6 +1,8 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 const BoardSize = 6
 
@@ -50,7 +52,12 @@ func (b *Board) UpdateTileColor(x, y int, color GameColor) {
 	b.Tiles[y][x].Color = color
 }
 
+func (b *Board) InBounds(pos Position) bool {
+	return pos.X >= 0 && pos.X < BoardSize && pos.Y >= 0 && pos.Y < BoardSize
+}
+
 func (b *Board) SwapTiles(pos1, pos2 Position) {
+
 	tile1 := b.Tiles[pos1.Y][pos1.X]
 	tile2 := b.Tiles[pos2.Y][pos2.X]
 
